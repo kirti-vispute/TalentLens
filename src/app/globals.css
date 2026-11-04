@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f7f5;
+  --surface: #ffffff;
+  --foreground: #1c1c1a;
+  --muted: #6b6b64;
+  --border: #e4e2dc;
+  --accent: #3f5d4e;
+  --accent-foreground: #ffffff;
+  --accent-soft: #e7eee7;
+  --danger: #a3372f;
+  --danger-soft: #f7e9e7;
+  --warning: #8a6116;
+  --warning-soft: #f5edd9;
+  --success: #2f6b4f;
+  --success-soft: #e3f0e6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #15161a;
+    --surface: #1d1e23;
+    --foreground: #eceae4;
+    --muted: #9b9a93;
+    --border: #2c2d33;
+    --accent: #7fae95;
+    --accent-foreground: #0f1410;
+    --accent-soft: #223029;
+    --danger: #e08479;
+    --danger-soft: #30201e;
+    --warning: #e3c171;
+    --warning-soft: #332a16;
+    --success: #87c6a3;
+    --success-soft: #1c2b22;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+* {
+  border-color: var(--border);
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent;
+  }
+}
