@@ -148,21 +148,29 @@ export async function createRequisitionAction(
     return { ok: false, error: "Max experience must be at or above min experience." };
   }
 
-  const req = await prisma.requisition.create({
-    data: {
-      title: parsed.data.title,
-      rawJD: parsed.data.rawJD,
-      location: parsed.data.location,
-      experienceMin: parsed.data.experienceMin,
-      experienceMax: parsed.data.experienceMax,
-      noticeDaysMax: parsed.data.noticeDaysMax,
-      ctcMax: parsed.data.ctcMax,
-      clientCompanyId: parsed.data.clientCompanyId,
-      mustHaveSkills: JSON.stringify(parsed.data.mustHaveSkills),
-      niceToHaveSkills: JSON.stringify(parsed.data.niceToHaveSkills),
-      createdById: session.userId,
-    },
-  });
+  let req;
+  try {
+    req = await prisma.requisition.create({
+      data: {
+        title: parsed.data.title,
+        rawJD: parsed.data.rawJD,
+        location: parsed.data.location,
+        experienceMin: parsed.data.experienceMin,
+        experienceMax: parsed.data.experienceMax,
+        noticeDaysMax: parsed.data.noticeDaysMax,
+        ctcMax: parsed.data.ctcMax,
+        clientCompanyId: parsed.data.clientCompanyId,
+        mustHaveSkills: JSON.stringify(parsed.data.mustHaveSkills),
+        niceToHaveSkills: JSON.stringify(parsed.data.niceToHaveSkills),
+        createdById: session.userId,
+      },
+    });
+  } catch {
+    return {
+      ok: false,
+      error: "Could not create the requisition — your session may be stale. Sign out and back in, then retry.",
+    };
+  }
 
   await logAudit(session.userId, "CREATE_REQUISITION", "Requisition", req.id, {
     title: req.title,
@@ -196,6 +204,14 @@ export async function uploadCandidatesAction(formData: FormData): Promise<Upload
   ];
 
   const files = formData.getAll("files").filter((f): f is File => f instanceof File);
+  if (files.length > 500) {
+    return {
+      uploaded: 0,
+      duplicates: 0,
+      unreadable: 0,
+      errors: ["Upload up to 500 CVs at a time — split this batch into smaller ones."],
+    };
+  }
   const existing = await prisma.candidate.findMany({
     select: { id: true, name: true, email: true, phone: true },
   });
@@ -280,6 +296,9 @@ export async function sendToClientAction(applicationId: string): Promise<ActionR
   if (!application) return { ok: false, error: "Application not found." };
   if (!application.openedByRecruiter) {
     return { ok: false, error: "Open and confirm this CV before sending it to the client." };
+  }
+  if (application.status === "CLIENT_REVIEW") {
+    return { ok: false, error: "Already with the client." };
   }
   await prisma.application.update({
     where: { id: applicationId },
@@ -369,8 +388,11 @@ export async function clientActionOnApplication(
     interviewSlot: (formData.get("interviewSlot") as string) || undefined,
   });
   if (!parsed.success) return { ok: false, error: "Invalid action." };
-  if (parsed.data.action === "REJECT" && !parsed.data.rejectionReason) {
+  if (parsed.data.action === "REJECT" && !parsed.data.rejectionReason?.trim()) {
     return { ok: false, error: "A rejection reason is required." };
+  }
+  if (parsed.data.action === "PROPOSE_INTERVIEW" && !parsed.data.interviewSlot?.trim()) {
+    return { ok: false, error: "Propose a specific interview slot." };
   }
 
   const application = await prisma.application.findUnique({
@@ -380,6 +402,9 @@ export async function clientActionOnApplication(
   if (!application) return { ok: false, error: "Application not found." };
   if (application.requisition.clientCompanyId !== session.clientCompanyId) {
     return { ok: false, error: "You do not have access to this candidate." };
+  }
+  if (application.status !== "CLIENT_REVIEW") {
+    return { ok: false, error: "This candidate has already been decided on." };
   }
 
   const statusMap = {
