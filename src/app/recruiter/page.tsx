@@ -51,7 +51,7 @@ export default async function RecruiterDashboard() {
                       <span>{req.applications.length} candidates</span>
                       <span>Top score {topScore}</span>
                       {pendingClientReview > 0 && (
-                        <Badge tone="warning">{pendingClientReview} with client</Badge>
+                        <Badge tone="warning" pulse>{pendingClientReview} with client</Badge>
                       )}
                     </div>
                   </Card>

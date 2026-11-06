@@ -23,6 +23,7 @@ export default async function LoginPage() {
           <p className="mt-1">Recruiter: recruiter@talentlens.app</p>
           <p>Client (Northbridge): client.northbridge@talentlens.app</p>
           <p>Client (Meridian): client.meridian@talentlens.app</p>
+          <p>Client (Oakridge): client.oakridge@talentlens.app</p>
           <p className="mt-1">Password for all: Demo@1234</p>
         </FadeIn>
       </FadeIn>

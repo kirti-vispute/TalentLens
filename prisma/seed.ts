@@ -24,6 +24,12 @@ const KYC_CRITERIA_NICE = [
   { skill: "Customer Service", weight: 2, required: false },
 ];
 
+const CS_CRITERIA_MUST = [
+  { skill: "Customer Service", weight: 5, required: true },
+  { skill: "Communication", weight: 4, required: true },
+];
+const CS_CRITERIA_NICE = [{ skill: "Excel", weight: 2, required: false }];
+
 const JAVA_JD = `Senior Java Developer
 Northbridge Technologies, Noida
 5-8 years experience
@@ -42,6 +48,15 @@ Nice to have: Banking Operations experience, Customer Service.
 Notice period up to 45 days.
 Location: Noida.`;
 
+const CS_JD = `Customer Service Executive
+Oakridge Retail, Pune
+1-3 years experience
+Looking for a Customer Service Executive for our retail support desk.
+Must have: Customer Service, Communication.
+Nice to have: Excel.
+Notice period up to 30 days.
+Location: Pune.`;
+
 function resume(name: string, lines: string[]): string {
   return [name, "", ...lines].join("\n");
 }
@@ -54,6 +69,9 @@ async function main() {
   });
   const meridian = await prisma.clientCompany.create({
     data: { name: "Meridian Bank Ops" },
+  });
+  const oakridge = await prisma.clientCompany.create({
+    data: { name: "Oakridge Retail" },
   });
 
   const passwordHash = await bcrypt.hash("Demo@1234", 10);
@@ -87,6 +105,16 @@ async function main() {
     },
   });
 
+  const clientOakridge = await prisma.user.create({
+    data: {
+      email: "client.oakridge@talentlens.app",
+      name: "Rohan Kapoor",
+      role: "CLIENT",
+      passwordHash,
+      clientCompanyId: oakridge.id,
+    },
+  });
+
   const reqJava = await prisma.requisition.create({
     data: {
       title: "Senior Java Developer",
@@ -115,6 +143,22 @@ async function main() {
       mustHaveSkills: JSON.stringify(KYC_CRITERIA_MUST),
       niceToHaveSkills: JSON.stringify(KYC_CRITERIA_NICE),
       clientCompanyId: meridian.id,
+      createdById: recruiter.id,
+    },
+  });
+
+  const reqCS = await prisma.requisition.create({
+    data: {
+      title: "Customer Service Executive",
+      rawJD: CS_JD,
+      location: "Pune",
+      experienceMin: 1,
+      experienceMax: 3,
+      noticeDaysMax: 30,
+      ctcMax: 350000,
+      mustHaveSkills: JSON.stringify(CS_CRITERIA_MUST),
+      niceToHaveSkills: JSON.stringify(CS_CRITERIA_NICE),
+      clientCompanyId: oakridge.id,
       createdById: recruiter.id,
     },
   });
@@ -272,6 +316,63 @@ async function main() {
     },
   ];
 
+  const csCandidates = [
+    {
+      extId: "CND-92010",
+      name: "Ananya Krishnan",
+      email: "ananya.krishnan@example.com",
+      phone: "9876543230",
+      currentRole: "Customer Service Executive",
+      noticeDays: 20,
+      text: resume("Ananya Krishnan", [
+        "Customer Service Executive, 2.5 years experience",
+        "Strong communication skills, handled 80+ calls daily with high CSAT",
+        "Excel for daily reporting",
+        "Notice period: 20 days",
+      ]),
+    },
+    {
+      extId: "CND-92031",
+      name: "Imran Qureshi",
+      email: "imran.qureshi@example.com",
+      phone: "9876543231",
+      currentRole: "Retail Associate",
+      noticeDays: 15,
+      text: resume("Imran Qureshi", [
+        "Retail Associate, 1.5 years experience",
+        "Customer service for walk-in retail customers, good communication",
+        "Notice period: 15 days",
+      ]),
+    },
+    {
+      extId: "CND-92048",
+      name: "Sneha Pillai",
+      email: "sneha.pillai@example.com",
+      phone: "9876543232",
+      currentRole: "Front Desk Executive",
+      noticeDays: 30,
+      text: resume("Sneha Pillai", [
+        "Front Desk Executive, 3 years experience",
+        "Customer service and communication with walk-in and phone clients",
+        "Advanced Excel for daily logs",
+        "Notice period: 30 days",
+      ]),
+    },
+    {
+      extId: "CND-92055",
+      name: "Varun Thakur",
+      email: "varun.thakur@example.com",
+      phone: "9876543233",
+      currentRole: "Data Entry Operator",
+      noticeDays: 45,
+      text: resume("Varun Thakur", [
+        "Data Entry Operator, 1 year experience",
+        "Excel data entry, limited customer-facing experience",
+        "Notice period: 45 days",
+      ]),
+    },
+  ];
+
   async function seedApplications(
     candidates: typeof javaCandidates,
     requisitionId: string,
@@ -324,37 +425,80 @@ async function main() {
 
   await seedApplications(javaCandidates, reqJava.id, [...JAVA_CRITERIA_MUST, ...JAVA_CRITERIA_NICE], reqJava);
   await seedApplications(kycCandidates, reqKyc.id, [...KYC_CRITERIA_MUST, ...KYC_CRITERIA_NICE], reqKyc);
+  await seedApplications(csCandidates, reqCS.id, [...CS_CRITERIA_MUST, ...CS_CRITERIA_NICE], reqCS);
 
-  // Give the client portal something to review: shortlist the top Java
-  // candidate and move one KYC candidate further down the pipeline.
-  const topJavaApp = await prisma.application.findFirst({
-    where: { requisitionId: reqJava.id },
-    orderBy: { score: "desc" },
-  });
-  if (topJavaApp) {
+  // Spread every requisition's applications across the whole pipeline —
+  // sourced through joined/rejected — so the board and client portal
+  // both demo with a realistic, fully-populated spread rather than one
+  // lonely card per column.
+  async function setStatus(
+    requisitionId: string,
+    candidateName: string,
+    status:
+      | "SOURCED"
+      | "SCREENED"
+      | "SHORTLISTED"
+      | "CLIENT_REVIEW"
+      | "INTERVIEW"
+      | "OFFERED"
+      | "JOINED"
+      | "REJECTED",
+    extra?: { openedByRecruiter?: boolean; rejectionReason?: string; interviewSlot?: string }
+  ) {
+    const application = await prisma.application.findFirst({
+      where: { requisitionId, candidate: { name: candidateName } },
+    });
+    if (!application) return;
     await prisma.application.update({
-      where: { id: topJavaApp.id },
-      data: { status: "CLIENT_REVIEW", openedByRecruiter: true },
+      where: { id: application.id },
+      data: {
+        status,
+        openedByRecruiter: extra?.openedByRecruiter ?? application.openedByRecruiter,
+        rejectionReason: extra?.rejectionReason ?? null,
+        interviewSlot: extra?.interviewSlot ?? null,
+        viewedByClientAt: status === "SHORTLISTED" || status === "REJECTED" ? new Date() : null,
+      },
     });
   }
 
-  const topKycApp = await prisma.application.findFirst({
-    where: { requisitionId: reqKyc.id },
-    orderBy: { score: "desc" },
+  // Senior Java Developer (Northbridge) — one of each stage.
+  await setStatus(reqJava.id, "Sandeep Verma", "CLIENT_REVIEW", { openedByRecruiter: true });
+  await setStatus(reqJava.id, "Vikram Joshi", "SHORTLISTED", { openedByRecruiter: true });
+  await setStatus(reqJava.id, "Ritika Bansal", "INTERVIEW", {
+    openedByRecruiter: true,
+    interviewSlot: "Thu 13 Nov, 4:00 PM IST",
   });
-  if (topKycApp) {
-    await prisma.application.update({
-      where: { id: topKycApp.id },
-      data: { status: "INTERVIEW", openedByRecruiter: true },
-    });
-  }
+  await setStatus(reqJava.id, "Pooja Nair", "REJECTED", {
+    openedByRecruiter: true,
+    rejectionReason: "Notice period too long for this intake.",
+  });
+
+  // KYC Analyst (Meridian) — one of each stage.
+  await setStatus(reqKyc.id, "Shreya Iyer", "CLIENT_REVIEW", { openedByRecruiter: true });
+  await setStatus(reqKyc.id, "Arjun Rawat", "OFFERED", { openedByRecruiter: true });
+  await setStatus(reqKyc.id, "Fatima Sheikh", "SHORTLISTED", { openedByRecruiter: true });
+  await setStatus(reqKyc.id, "Rahul Mehta", "REJECTED", {
+    openedByRecruiter: true,
+    rejectionReason: "Missing KYC/AML experience required for this role.",
+  });
+
+  // Customer Service Executive (Oakridge) — one of each stage.
+  await setStatus(reqCS.id, "Ananya Krishnan", "CLIENT_REVIEW", { openedByRecruiter: true });
+  await setStatus(reqCS.id, "Sneha Pillai", "JOINED", { openedByRecruiter: true });
+  await setStatus(reqCS.id, "Imran Qureshi", "CLIENT_REVIEW", { openedByRecruiter: true });
+  await setStatus(reqCS.id, "Varun Thakur", "REJECTED", {
+    openedByRecruiter: true,
+    rejectionReason: "No customer-facing experience; profile is data entry focused.",
+  });
 
   console.log("Seed complete.");
   console.log("Recruiter login: recruiter@talentlens.app / Demo@1234");
   console.log("Client (Northbridge) login: client.northbridge@talentlens.app / Demo@1234");
   console.log("Client (Meridian) login: client.meridian@talentlens.app / Demo@1234");
+  console.log("Client (Oakridge) login: client.oakridge@talentlens.app / Demo@1234");
   void clientNorthbridge;
   void clientMeridian;
+  void clientOakridge;
 }
 
 main()

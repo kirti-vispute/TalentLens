@@ -33,7 +33,7 @@ export default async function PortalDashboard() {
                     <p className="text-sm text-muted">{req.location ?? "Location not set"}</p>
                     <div className="mt-auto flex items-center gap-2">
                       {pending > 0 ? (
-                        <Badge tone="warning">{pending} awaiting your review</Badge>
+                        <Badge tone="warning" pulse>{pending} awaiting your review</Badge>
                       ) : (
                         <Badge tone="muted">Up to date</Badge>
                       )}

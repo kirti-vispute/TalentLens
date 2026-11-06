@@ -47,6 +47,7 @@ npm run db:seed
 | Recruiter | `recruiter@talentlens.app` | `Demo@1234` |
 | Client — Northbridge Technologies | `client.northbridge@talentlens.app` | `Demo@1234` |
 | Client — Meridian Bank Ops | `client.meridian@talentlens.app` | `Demo@1234` |
+| Client — Oakridge Retail | `client.oakridge@talentlens.app` | `Demo@1234` |
 
 These accounts and passwords exist only in the seed script (not committed
 as real data) and are for demo/review purposes only.

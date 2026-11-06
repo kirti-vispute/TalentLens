@@ -280,8 +280,8 @@ function RankedList({
               </td>
               <td className="px-4 py-3">
                 <div className="flex gap-1">
-                  {a.lowConfidence && <Badge tone="warning">Needs review</Badge>}
-                  {a.duplicateOfName && <Badge tone="danger">Possible duplicate</Badge>}
+                  {a.lowConfidence && <Badge tone="warning" pulse>Needs review</Badge>}
+                  {a.duplicateOfName && <Badge tone="danger" pulse>Possible duplicate</Badge>}
                 </div>
               </td>
             </motion.tr>
@@ -436,7 +436,7 @@ function CandidateDrawer({
           <StatusBadge status={application.status} />
           {application.lowConfidence && <Badge tone="warning">Needs manual review</Badge>}
           {application.duplicateOfName && (
-            <Badge tone="danger">Possible duplicate of {application.duplicateOfName}</Badge>
+            <Badge tone="danger" pulse>Possible duplicate of {application.duplicateOfName}</Badge>
           )}
         </div>
       </div>

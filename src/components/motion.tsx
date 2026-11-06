@@ -148,21 +148,27 @@ export function ScoreRing({ score, size = 56 }: { score: number; size?: number }
   );
 }
 
-/** A horizontal fill bar variant of the same idea, for tight table rows. */
+/** A horizontal fill bar variant of the same idea, for tight table rows.
+ * Keeps a faint, continuously sweeping highlight after it fills — a
+ * quiet signal that the page is alive, not a static screenshot. */
 export function ScoreBar({ score, width = 72 }: { score: number; width?: number }) {
   const tone = score >= 75 ? "bg-success" : score >= 50 ? "bg-warning" : "bg-danger";
   return (
     <div className="flex items-center gap-2">
-      <div
-        className="h-1.5 overflow-hidden rounded-full bg-border"
-        style={{ width }}
-      >
+      <div className="relative h-1.5 overflow-hidden rounded-full bg-border" style={{ width }}>
         <motion.div
-          className={`h-full rounded-full ${tone}`}
+          className={`relative h-full overflow-hidden rounded-full ${tone}`}
           initial={{ width: 0 }}
           animate={{ width: `${score}%` }}
-          transition={{ duration: 0.7, ease: EASE }}
-        />
+          transition={{ duration: 0.8, ease: EASE }}
+        >
+          <motion.div
+            className="absolute inset-y-0 w-1/3 bg-white/40"
+            initial={{ x: "-120%" }}
+            animate={{ x: "320%" }}
+            transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 1.4, ease: "easeInOut", delay: 0.9 }}
+          />
+        </motion.div>
       </div>
       <span className="text-sm font-semibold tabular-nums text-foreground">{score}</span>
     </div>

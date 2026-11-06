@@ -94,9 +94,11 @@ export function Spinner({ className = "" }: { className?: string }) {
 export function Badge({
   children,
   tone = "muted",
+  pulse = false,
 }: {
   children: ReactNode;
   tone?: "muted" | "accent" | "success" | "warning" | "danger";
+  pulse?: boolean;
 }) {
   const tones: Record<string, string> = {
     muted: "bg-border/60 text-muted",
@@ -105,8 +107,21 @@ export function Badge({
     warning: "bg-warning-soft text-warning",
     danger: "bg-danger-soft text-danger",
   };
+  const dotTones: Record<string, string> = {
+    muted: "bg-muted",
+    accent: "bg-accent",
+    success: "bg-success",
+    warning: "bg-warning",
+    danger: "bg-danger",
+  };
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${tones[tone]}`}>
+      {pulse && (
+        <span className="relative flex h-1.5 w-1.5">
+          <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${dotTones[tone]}`} />
+          <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${dotTones[tone]}`} />
+        </span>
+      )}
       {children}
     </span>
   );
