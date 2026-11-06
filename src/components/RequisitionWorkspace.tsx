@@ -469,7 +469,7 @@ function CandidateDrawer({
         </div>
       )}
 
-      <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
+      <dl className="mt-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
         <Detail label="Experience" value={application.experienceYears != null ? `${application.experienceYears} yrs` : "Unknown"} />
         <Detail label="Notice period" value={application.noticeDays != null ? `${application.noticeDays} days` : "Unknown"} />
         <Detail label="Email" value={application.email ?? "Not found"} />
@@ -526,9 +526,9 @@ function CandidateDrawer({
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="min-w-0">
       <dt className="text-xs text-muted">{label}</dt>
-      <dd className="text-foreground">{value}</dd>
+      <dd className="break-words text-foreground">{value}</dd>
     </div>
   );
 }
