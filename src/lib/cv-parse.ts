@@ -26,7 +26,8 @@ export async function extractResumeText(file: File): Promise<string> {
     // extraction, but we still create the candidate record so the
     // recruiter can see it was uploaded and needs a manual look.
     return "";
-  } catch {
+  } catch (error) {
+    console.error("extractResumeText failed for", file.name, error);
     return "";
   }
 }

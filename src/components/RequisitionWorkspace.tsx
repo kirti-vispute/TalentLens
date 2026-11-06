@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   markOpenedAction,
@@ -159,6 +159,7 @@ function UploadPanel({ requisitionId, onDone }: { requisitionId: string; onDone:
   const [summary, setSummary] = useState<UploadSummary | null>(null);
   const [fileCount, setFileCount] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
 
   function handleSubmit(formData: FormData) {
@@ -172,11 +173,26 @@ function UploadPanel({ requisitionId, onDone }: { requisitionId: string; onDone:
           "success"
         );
         setFileCount(0);
+        if (fileInputRef.current) fileInputRef.current.value = "";
       } else if (result.errors.length > 0) {
         toast.push(result.errors[0], "error");
       }
       onDone();
     });
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    const dropped = e.dataTransfer.files;
+    if (!dropped || dropped.length === 0 || !fileInputRef.current) return;
+    // Drag-and-drop lands on the <label>, not the <input>, so the browser
+    // never populates the input on its own — hand it the dropped files
+    // via a DataTransfer so the form submits them like a normal selection.
+    const transfer = new DataTransfer();
+    for (const file of Array.from(dropped)) transfer.items.add(file);
+    fileInputRef.current.files = transfer.files;
+    setFileCount(transfer.files.length);
   }
 
   return (
@@ -195,9 +211,10 @@ function UploadPanel({ requisitionId, onDone }: { requisitionId: string; onDone:
               setDragOver(true);
             }}
             onDragLeave={() => setDragOver(false)}
-            onDrop={() => setDragOver(false)}
+            onDrop={handleDrop}
           >
             <input
+              ref={fileInputRef}
               type="file"
               name="files"
               multiple
