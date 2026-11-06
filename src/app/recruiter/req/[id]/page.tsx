@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { PageHeader, Badge } from "@/components/ui";
 import { RequisitionWorkspace } from "@/components/RequisitionWorkspace";
 import type { ScoringCriterion } from "@/lib/scoring";
+import { FadeIn } from "@/components/motion";
 
 export default async function RequisitionPage({
   params,
@@ -58,7 +59,7 @@ export default async function RequisitionPage({
   ];
 
   return (
-    <div className="flex flex-col gap-6">
+    <FadeIn className="flex flex-col gap-6">
       <PageHeader
         title={requisition.title}
         subtitle={`${requisition.clientCompany.name} · ${requisition.location ?? "Location not set"} · ${requisition.experienceMin}-${requisition.experienceMax} yrs · notice ≤ ${requisition.noticeDaysMax}d`}
@@ -69,6 +70,6 @@ export default async function RequisitionPage({
         criteria={criteria}
         applications={applications}
       />
-    </div>
+    </FadeIn>
   );
 }

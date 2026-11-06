@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { loginAction, type ActionResult } from "@/lib/actions";
 import { Button, FieldError } from "@/components/ui";
+import { motion, AnimatePresence } from "@/components/motion";
 
 const initialState: ActionResult | null = null;
 
@@ -10,7 +11,12 @@ export function LoginForm() {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <motion.form
+      action={formAction}
+      className="flex flex-col gap-4"
+      animate={state?.error ? { x: [0, -8, 8, -6, 6, 0] } : undefined}
+      transition={{ duration: 0.4 }}
+    >
       <div>
         <label htmlFor="email" className="text-sm font-medium text-foreground">
           Work email
@@ -22,7 +28,7 @@ export function LoginForm() {
           required
           autoComplete="username"
           placeholder="you@talentlens.app"
-          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent"
+          className="input mt-1"
         />
       </div>
       <div>
@@ -36,13 +42,13 @@ export function LoginForm() {
           required
           autoComplete="current-password"
           placeholder="••••••••"
-          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent"
+          className="input mt-1"
         />
       </div>
-      <FieldError>{state?.error}</FieldError>
-      <Button type="submit" className="w-full" disabled={pending}>
+      <AnimatePresence>{state?.error && <FieldError>{state.error}</FieldError>}</AnimatePresence>
+      <Button type="submit" className="w-full" loading={pending}>
         {pending ? "Signing in…" : "Sign in"}
       </Button>
-    </form>
+    </motion.form>
   );
 }

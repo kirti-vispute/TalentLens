@@ -4,7 +4,9 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { clientActionOnApplication, markViewedByClientAction } from "@/lib/actions";
 import type { EvidenceLine } from "@/lib/scoring";
-import { Button, Card, ScoreBadge, StatusBadge, EmptyState } from "@/components/ui";
+import { Button, Card, StatusBadge, EmptyState } from "@/components/ui";
+import { AnimatePresence, FadeIn, ScoreBar, StaggerGroup, StaggerItem, motion } from "@/components/motion";
+import { useToast } from "@/components/Toast";
 
 interface ClientApplicationView {
   applicationId: string;
@@ -49,25 +51,31 @@ export function ClientReviewBoard({
   return (
     <div className="flex flex-col gap-8">
       {pending.length > 0 && (
-        <section>
+        <FadeIn>
           <h2 className="text-sm font-semibold text-foreground">Awaiting your review ({pending.length})</h2>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            {pending.map((a) => (
-              <CandidateCard key={a.applicationId} application={a} onChanged={() => router.refresh()} />
-            ))}
-          </div>
-        </section>
+          <StaggerGroup className="mt-3 grid gap-4 sm:grid-cols-2">
+            <AnimatePresence>
+              {pending.map((a) => (
+                <StaggerItem key={a.applicationId} layoutId={`client-card-${a.applicationId}`}>
+                  <CandidateCard application={a} onChanged={() => router.refresh()} />
+                </StaggerItem>
+              ))}
+            </AnimatePresence>
+          </StaggerGroup>
+        </FadeIn>
       )}
 
       {decided.length > 0 && (
-        <section>
+        <FadeIn delay={0.1}>
           <h2 className="text-sm font-semibold text-foreground">Previously reviewed</h2>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <StaggerGroup className="mt-3 grid gap-4 sm:grid-cols-2">
             {decided.map((a) => (
-              <CandidateCard key={a.applicationId} application={a} readOnly onChanged={() => router.refresh()} />
+              <StaggerItem key={a.applicationId} layoutId={`client-card-${a.applicationId}`}>
+                <CandidateCard application={a} readOnly onChanged={() => router.refresh()} />
+              </StaggerItem>
             ))}
-          </div>
-        </section>
+          </StaggerGroup>
+        </FadeIn>
       )}
     </div>
   );
@@ -88,6 +96,7 @@ function CandidateCard({
   const [reason, setReason] = useState("");
   const [slot, setSlot] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   function act(action: "SHORTLIST" | "REJECT" | "PROPOSE_INTERVIEW") {
     const formData = new FormData();
@@ -97,10 +106,14 @@ function CandidateCard({
     if (action === "PROPOSE_INTERVIEW") formData.set("interviewSlot", slot);
     startTransition(async () => {
       const result = await clientActionOnApplication(null, formData);
-      if (!result.ok) setError(result.error ?? "Something went wrong.");
-      else {
+      if (!result.ok) {
+        setError(result.error ?? "Something went wrong.");
+      } else {
         setError(null);
         setMode("idle");
+        const verb =
+          action === "SHORTLIST" ? "shortlisted" : action === "REJECT" ? "rejected" : "sent an interview slot for";
+        toast.push(`You ${verb} ${application.name}.`, action === "REJECT" ? "info" : "success");
         onChanged();
       }
     });
@@ -117,7 +130,7 @@ function CandidateCard({
       </div>
 
       <div className="mt-3 flex items-center gap-3 text-sm text-muted">
-        <ScoreBadge score={application.score} />
+        <ScoreBar score={application.score} width={60} />
         <span>{application.experienceYears != null ? `${application.experienceYears} yrs` : "Exp. unknown"}</span>
         <span>{application.noticeDays != null ? `${application.noticeDays}d notice` : "Notice unknown"}</span>
       </div>
@@ -133,27 +146,37 @@ function CandidateCard({
         <p className="mt-2 text-xs text-accent">Proposed slot: {application.interviewSlot}</p>
       )}
 
-      <button onClick={() => setExpanded((v) => !v)} className="mt-3 text-xs font-medium text-accent">
+      <button onClick={() => setExpanded((v) => !v)} className="mt-3 text-xs font-medium text-accent hover:underline">
         {expanded ? "Hide evidence" : "Why this score?"}
       </button>
-      {expanded && (
-        <div className="mt-2 flex flex-col gap-1.5">
-          {application.evidence.map((e) => (
-            <div key={e.criterion} className="rounded-md border border-border p-2 text-xs">
-              <span className="font-medium text-foreground">{e.criterion}:</span>{" "}
-              {e.matched ? <span className="text-success">matched</span> : <span className="text-muted">not found</span>}
-              {e.snippet && <p className="mt-0.5 text-muted">&ldquo;{e.snippet}&rdquo;</p>}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-2 flex flex-col gap-1.5">
+              {application.evidence.map((e) => (
+                <div key={e.criterion} className="rounded-md border border-border p-2 text-xs">
+                  <span className="font-medium text-foreground">{e.criterion}:</span>{" "}
+                  {e.matched ? <span className="text-success">matched</span> : <span className="text-muted">not found</span>}
+                  {e.snippet && <p className="mt-0.5 text-muted">&ldquo;{e.snippet}&rdquo;</p>}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {!readOnly && (
         <div className="mt-4 border-t border-border pt-3">
           {error && <p className="mb-2 text-sm text-danger">{error}</p>}
           {mode === "idle" && (
             <div className="flex flex-wrap gap-2">
-              <Button disabled={pending} onClick={() => act("SHORTLIST")}>
+              <Button loading={pending} onClick={() => act("SHORTLIST")}>
                 Shortlist
               </Button>
               <Button variant="secondary" disabled={pending} onClick={() => setMode("interview")}>
@@ -171,9 +194,10 @@ function CandidateCard({
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Reason for rejecting (required)"
                 className="input"
+                autoFocus
               />
               <div className="flex gap-2">
-                <Button variant="danger" disabled={pending || !reason.trim()} onClick={() => act("REJECT")}>
+                <Button variant="danger" loading={pending} disabled={!reason.trim()} onClick={() => act("REJECT")}>
                   Confirm reject
                 </Button>
                 <Button variant="ghost" onClick={() => setMode("idle")}>
@@ -189,9 +213,10 @@ function CandidateCard({
                 onChange={(e) => setSlot(e.target.value)}
                 placeholder="e.g. Tue 11 Nov, 3:00 PM IST"
                 className="input"
+                autoFocus
               />
               <div className="flex gap-2">
-                <Button disabled={pending || !slot.trim()} onClick={() => act("PROPOSE_INTERVIEW")}>
+                <Button loading={pending} disabled={!slot.trim()} onClick={() => act("PROPOSE_INTERVIEW")}>
                   Send proposed slot
                 </Button>
                 <Button variant="ghost" onClick={() => setMode("idle")}>

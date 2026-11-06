@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/ui";
 import { ClientReviewBoard } from "@/components/ClientReviewBoard";
 import { maskEmail, maskPhone } from "@/lib/mask";
+import { FadeIn } from "@/components/motion";
 
 export default async function PortalRequisitionPage({
   params,
@@ -38,12 +39,12 @@ export default async function PortalRequisitionPage({
     }));
 
   return (
-    <div className="flex flex-col gap-6">
+    <FadeIn className="flex flex-col gap-6">
       <PageHeader
         title={requisition.title}
         subtitle="Candidate contact details are masked — shortlist or request an interview and your recruiter will connect you directly."
       />
       <ClientReviewBoard requisitionId={requisition.id} applications={applications} />
-    </div>
+    </FadeIn>
   );
 }

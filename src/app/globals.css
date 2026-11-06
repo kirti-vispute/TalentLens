@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f5;
+  --background: #f7f7f4;
   --surface: #ffffff;
+  --surface-raised: #ffffff;
   --foreground: #1c1c1a;
   --muted: #6b6b64;
   --border: #e4e2dc;
@@ -15,30 +16,34 @@
   --warning-soft: #f5edd9;
   --success: #2f6b4f;
   --success-soft: #e3f0e6;
+  --shadow-color: 28 30 24;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #15161a;
-    --surface: #1d1e23;
+    --background: #121318;
+    --surface: #1b1c21;
+    --surface-raised: #212229;
     --foreground: #eceae4;
     --muted: #9b9a93;
     --border: #2c2d33;
-    --accent: #7fae95;
+    --accent: #85b89d;
     --accent-foreground: #0f1410;
-    --accent-soft: #223029;
+    --accent-soft: #1d2b23;
     --danger: #e08479;
     --danger-soft: #30201e;
     --warning: #e3c171;
     --warning-soft: #332a16;
     --success: #87c6a3;
     --success-soft: #1c2b22;
+    --shadow-color: 0 0 0;
   }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
@@ -55,17 +60,74 @@
   --font-mono: var(--font-geist-mono);
 }
 
-body {
+html {
   background: var(--background);
+  color-scheme: light dark;
+}
+
+body {
+  background: transparent;
   color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 * {
   border-color: var(--border);
 }
 
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Slim, theme-aware scrollbar — keeps the restrained look at the edges too. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+  background-clip: padding-box;
+}
+
 @layer components {
   .input {
-    @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent;
+    @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-shadow duration-150 focus:ring-2 focus:ring-accent/40 focus:border-accent;
   }
+
+  .shadow-soft {
+    box-shadow:
+      0 1px 2px rgba(var(--shadow-color) / 0.04),
+      0 4px 14px rgba(var(--shadow-color) / 0.06);
+  }
+
+  .shadow-soft-lg {
+    box-shadow:
+      0 2px 6px rgba(var(--shadow-color) / 0.06),
+      0 16px 40px rgba(var(--shadow-color) / 0.12);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--border) 0%, var(--accent-soft) 50%, var(--border) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
 }
