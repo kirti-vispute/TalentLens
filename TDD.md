@@ -3,7 +3,7 @@
 **Project:** AI resume screening & client shortlist portal
 **Client brief:** Staffing firm — Noida, IT/banking/retail contract & permanent hiring
 **GitHub repository:** *[not pushed — see note below]*
-**Live app:** *not deployed for this submission (see "What we cut")*
+**Live app:** https://talentlens-pink.vercel.app (Vercel, free Hobby plan — see `deployment.md` for how it's provisioned and two production-only bugs it surfaced)
 
 > **Note on the GitHub URL.** This submission was built in an environment
 > without the reviewer's GitHub credentials available to push from, so the
@@ -270,10 +270,13 @@ palette and clear type, nothing on screen that lacks a purpose."*
 **Cut, deliberately, to ship the CORE BUILD well instead of the full
 MUST HAVE list badly:**
 
-- No live deployment — this submission runs locally per `deployment.md`.
-  Given another day I'd deploy to Vercel + a hosted Postgres (the schema
-  is already provider-agnostic) and swap the demo JWT secret for a
-  properly rotated one.
+- Deployed to Vercel's free tier with Prisma Postgres (free, Neon-backed)
+  — see `deployment.md` for exactly how, including two bugs that only
+  showed up once this ran in a real serverless environment (pdf-parse
+  breaking every action, not just uploads; a missing worker file in the
+  deployed bundle) and how they were fixed and verified against the live
+  URL. Next step: a properly rotated `JWT_SECRET` and a custom domain,
+  both trivial but out of scope for a demo deployment.
 - No LLM API integration (see §4's reasoning) — a real next step worth
   exploring is a hybrid: keep the deterministic scorer as the
   *authoritative, explainable* score, and add an optional LLM pass that

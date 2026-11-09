@@ -1,8 +1,16 @@
 # Deployment
 
+## Live app
+
+**https://talentlens-pink.vercel.app** — deployed on Vercel (free Hobby
+plan), database on Prisma Postgres (free tier, Neon-backed), both
+provisioned through Vercel's own integration so no separate signups were
+needed. Demo logins below.
+
 ## Running locally
 
-**Prerequisites:** Node.js 20+, npm.
+**Prerequisites:** Node.js 20+, npm, and a Postgres database (a free one
+works fine — see "Getting a free Postgres database" below).
 
 1. Clone the repository and install dependencies:
    ```bash
@@ -10,13 +18,13 @@
    cd talentlens
    npm install
    ```
-2. Copy the environment template and generate a session secret:
+2. Copy the environment template and fill it in:
    ```bash
    cp .env.example .env
    ```
-   Open `.env` and set `JWT_SECRET` to any long random string (e.g.
+   Set `DATABASE_URL` to your Postgres connection string, and `JWT_SECRET`
+   to any long random string (e.g.
    `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`).
-   `DATABASE_URL` can stay as `file:./dev.db` for local SQLite.
 3. Create the database schema and load sample data:
    ```bash
    npm run db:push
@@ -32,13 +40,19 @@
    npm test
    ```
 
-To reset the database back to a clean seeded state at any point, stop the
-dev server (SQLite locks the file while it's running) and run:
+To reset the database back to a clean seeded state at any point:
 ```bash
-rm -f prisma/dev.db prisma/dev.db-journal
-npm run db:push
-npm run db:seed
+npm run db:reset
 ```
+
+### Getting a free Postgres database
+
+Any of these work with zero cost:
+- **Vercel Postgres** (what this submission uses) — `npx vercel link`,
+  then `npx vercel install prisma/prisma-postgres`, then
+  `npx vercel env pull .env.local` to get the connection string locally.
+- **Neon** (neon.tech) — free tier, standalone signup.
+- **Supabase** (supabase.com) — free tier, standalone signup.
 
 ## Demo login details (for the reviewer)
 
@@ -56,36 +70,59 @@ as real data) and are for demo/review purposes only.
 
 | Name | Required | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Yes | SQLite connection string for Prisma (`file:./dev.db` locally). |
+| `DATABASE_URL` | Yes | Postgres connection string for Prisma. |
 | `JWT_SECRET` | Yes | Signs the session cookie. Must be a long random string, different per environment. |
 
 No values are committed anywhere in this repository — only variable
-*names* appear in `.env.example`.
+*names* appear in `.env.example`. Vercel's own project env vars (set via
+`vercel env add` / the dashboard) hold the real production values.
 
 ## How it's deployed
 
-This submission is a local, runnable project. If deployed to a hosting
-platform (e.g. Vercel, Render, Fly.io), the steps are:
-
-1. Provision a persistent database. SQLite works for a demo, but a
-   single-writer file database does not suit a serverless/multi-instance
-   host — swap `DATABASE_URL` to a hosted Postgres instance and change
-   `datasource db { provider = "sqlite" }` to `"postgresql"` in
-   `prisma/schema.prisma` (the rest of the Prisma code is
-   provider-agnostic).
-2. Set `DATABASE_URL` and `JWT_SECRET` as the platform's environment
-   variables (never committed).
-3. Run `npx prisma db push` (or a proper migration) once against the
-   production database, then `npx tsx prisma/seed.ts` if you want the
-   same demo accounts there.
-4. Build with `npm run build`, start with `npm run start`.
+1. **Hosting:** Vercel (free Hobby plan), linked via `vercel link` and
+   deployed with `vercel --prod`. Deployment protection (Vercel's SSO
+   wall, on by default for new projects) was explicitly disabled so the
+   app is publicly reachable without a Vercel login.
+2. **Database:** Prisma Postgres, provisioned with
+   `vercel install prisma/prisma-postgres` — this installs it as a
+   Vercel Marketplace integration and auto-populates `DATABASE_URL` (and
+   a few related variables) as project environment variables, so no
+   separate database-provider signup was needed.
+3. **Schema + seed:** `npx prisma db push` against the production
+   `DATABASE_URL`, then `npx tsx prisma/seed.ts`, run once locally with
+   the production connection string loaded (`vercel env pull`).
+4. **Secrets:** `JWT_SECRET` was added with `vercel env add JWT_SECRET
+   production` (and `preview`) — never committed, never echoed into any
+   log.
 5. File uploads (CV parsing) happen in-request via Server Actions — no
    separate object storage is needed for this submission's scope, since
    the resume text is extracted and stored in the database, not the
    original file.
 
-**Live app URL:** not deployed for this submission — see the TDD's
-"What we cut" section.
+### A real bug this surfaced, and the fix
+
+Two issues only showed up once this ran on Vercel's actual serverless
+runtime (both invisible in local dev):
+
+- **pdf-parse broke every Server Action, not just uploads.** `cv-parse.ts`
+  statically imported `pdf-parse` at module load time; because it's
+  imported from the same `actions.ts` file as every other Server Action,
+  *logging in* pulled in `pdfjs-dist`, which throws
+  (`ReferenceError: DOMMatrix is not defined`) in a plain Node serverless
+  function with no canvas/browser globals. Fixed by making that import
+  dynamic (`await import("pdf-parse")`), so it only loads when a PDF is
+  actually being parsed, and by stubbing a minimal `DOMMatrix` before
+  that import (pdfjs-dist expects the global to exist even for pure text
+  extraction, no rendering involved).
+- **The PDF worker file was missing from the deployed bundle.**
+  `pdfjs-dist` requires its `pdf.worker.mjs` by a dynamic path Next's
+  build-time file tracer can't see, so it was silently left out of the
+  Vercel function (`Cannot find module '...pdf.worker.mjs'`). Fixed with
+  `outputFileTracingIncludes` in `next.config.ts`, forcing that file into
+  every route's trace explicitly.
+
+Both were confirmed fixed by dispatching a real file upload against the
+live production URL, not just redeploying and hoping.
 
 ## Security notes relevant to deployment
 
@@ -95,5 +132,5 @@ platform (e.g. Vercel, Render, Fly.io), the steps are:
 - Every Server Action re-derives the session from the cookie and
   re-checks role and company ownership — the UI hiding a button is not
   treated as access control.
-- No secrets or real personal data are committed; `.env` is gitignored
-  and only `.env.example` (names, no values) is tracked.
+- No secrets or real personal data are committed; `.env` and `.env.local`
+  are gitignored and only `.env.example` (names, no values) is tracked.
