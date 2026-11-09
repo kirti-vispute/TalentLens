@@ -2,16 +2,8 @@
 
 **Project:** AI resume screening & client shortlist portal
 **Client brief:** Staffing firm — Noida, IT/banking/retail contract & permanent hiring
-**GitHub repository:** *[not pushed — see note below]*
+**GitHub repository:** https://github.com/kirti-vispute/TalentLens
 **Live app:** https://talentlens-pink.vercel.app (Vercel, free Hobby plan — see `deployment.md` for how it's provisioned and two production-only bugs it surfaced)
-
-> **Note on the GitHub URL.** This submission was built in an environment
-> without the reviewer's GitHub credentials available to push from, so the
-> repository is committed locally with full history but not yet hosted on
-> GitHub. Before the interview this will be pushed to a public repo and
-> this line updated — the commit history (6 commits, one per concern:
-> scaffold -> data layer -> scoring engine + tests -> auth/actions -> UI ->
-> seed data) is preserved exactly as built.
 
 ---
 

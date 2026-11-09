@@ -2,7 +2,7 @@
 
 ### TalentLens: an AI resume screening and client shortlist portal
 
-**GitHub:** [not pushed yet — pushed by the candidate before final submission]
+**GitHub:** https://github.com/kirti-vispute/TalentLens
 **Live app:** https://talentlens-pink.vercel.app — deployed on Vercel (free Hobby plan) with Prisma Postgres (free tier). Demo logins are in `deployment.md`.
 **Problem statement chosen:** Staffing firm's AI resume screening tool and client shortlist portal (Company A, Noida)
 **Role in the build:** solo, Software Engineering core build. Date: 9 November 2026

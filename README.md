@@ -3,11 +3,14 @@
 AI-assisted resume screening and client shortlist portal, built for a
 staffing firm's recruiters and their clients' hiring managers.
 
+**Live app:** https://talentlens-pink.vercel.app
+**Repository:** https://github.com/kirti-vispute/TalentLens
+
 Built for the Isocode Labs Software Engineering Intern take-home, from the
 brief: *"Staffing firm's AI resume screening tool and client shortlist
-portal."* See [`TDD.pdf`](./TDD.pdf) (in the submission zip) for the full
-technical design document, and [`deployment.md`](./deployment.md) for how
-to run and deploy this.
+portal."* See [`TDD.pdf`](./TDD.pdf) / [`design.pdf`](./design.pdf) (in the
+submission zip) for the full technical design document, and
+[`deployment.md`](./deployment.md) for how to run and deploy this.
 
 ## What it does
 
